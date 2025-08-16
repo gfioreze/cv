@@ -1,36 +1,28 @@
 name: Build CV PDF
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: # Allows manual run
   push:
     paths:
-      - "cv.tex"
+      - "cv.tex" # Runs automatically if cv.tex changes
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v3
-      - name: Install Tex Live
-        run: sudo apt-get update && sudo apt-get install -y \
-          texlive-latex-recommended \
-          texlive-latex-extra \
-          texlive-fonts-recommended \
-          texlive-xetex \
-          texlive-fontawesome \
-          biber
+      - name: Checkout repo
+        uses: actions/checkout@v3
 
       - name: Compile CV
-        run: |
-          pdflatex cv.tex
-          biber cv || true
-          pdflatex cv.tex
+        uses: xu-cheng/latex-action@v3
+        with:
+          root_file: cv.tex
 
-      - name: Commit PDF to build branch
+      - name: Commit PDF to repo
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "actions@github.com"
-          git checkout -B build
           git add cv.pdf
-          git commit -m "Update compiled PDF"
-          git push -f origin build
+          git commit -m "Update compiled CV PDF [skip ci]" || echo "No changes to commit"
+          git push
