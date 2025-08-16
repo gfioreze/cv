@@ -1,6 +1,7 @@
 name: Build CV PDF
 
 on:
+  workflow_dispatch:
   push:
     paths:
       - "cv.tex"
@@ -8,25 +9,24 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-      - name: Set up LaTeX
-        uses: xu-cheng/latex-action@v3
-        with:
-          root_file: cv.tex
+      - name: Install Tex Live
+        run: sudo apt-get update && sudo apt-get install -y texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended texlive-xetex biber
 
-      - name: Upload PDF as artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: cv-pdf
-          path: cv.pdf
-      - name: Commit and push PDF
+      - name: Compile CV
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add cv.pdf
-          git commit -m "Update CV PDF [skip ci]" || echo "No changes to commit"
-          git push
+          pdflatex cv.tex
+          biber cv || true
+          pdflatex cv.tex
 
+      - name: Commit PDF to build branch
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "actions@github.com"
+          git checkout -B build
+          git add cv.pdf
+          git commit -m "Update compiled PDF"
+          git push -f origin build
